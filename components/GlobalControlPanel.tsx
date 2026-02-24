@@ -2,22 +2,20 @@ import React, { useState } from 'react';
 import { database } from '../services/firebase';
 import { ref, set } from 'firebase/database';
 import { DeviceListEntry, CommandAction } from '../types';
-import { Power, RotateCw, Lock, AlertTriangle, X, Check } from 'lucide-react';
+import { Power, RotateCw, Lock, AlertTriangle, X, Check, ShieldAlert } from 'lucide-react';
 
 interface GlobalControlPanelProps {
   devices: Record<string, DeviceListEntry>;
+  isExamMode: boolean;
+  onToggleExamMode: (enabled: boolean) => void;
 }
 
-export const GlobalControlPanel: React.FC<GlobalControlPanelProps> = ({ devices }) => {
+export const GlobalControlPanel: React.FC<GlobalControlPanelProps> = ({ devices, isExamMode, onToggleExamMode }) => {
   const [confirmAction, setConfirmAction] = useState<{ action: CommandAction; label: string } | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
   // Filter online devices
-  // Note: We use a loose check for 'online' status here. 
-  // Ideally, we should also check last_seen, but the device list entry might not be updated as frequently as the detail view.
-  // We'll trust the status field for now, or we can add a time check if last_seen is available.
   const onlineDevices = Object.entries(devices).filter(([, entry]) => {
-     // Check if status is online AND last_seen is within 2 minutes (120000ms) to be safe
      const isRecent = new Date(entry.last_seen).getTime() > Date.now() - 120000;
      return entry.status === 'online' && isRecent;
   });
@@ -45,8 +43,6 @@ export const GlobalControlPanel: React.FC<GlobalControlPanelProps> = ({ devices 
       });
 
       await Promise.all(promises);
-      
-      // Close modal after success
       setConfirmAction(null);
     } catch (error) {
       console.error("Failed to execute global command:", error);
@@ -77,6 +73,20 @@ export const GlobalControlPanel: React.FC<GlobalControlPanelProps> = ({ devices 
             </div>
 
             <div className="flex flex-wrap gap-3">
+                <button 
+                    onClick={() => onToggleExamMode(!isExamMode)}
+                    className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all active:scale-95 ${
+                        isExamMode 
+                        ? 'bg-red-500 text-white border-red-600 shadow-lg shadow-red-500/20 animate-pulse' 
+                        : 'bg-surfaceLight/30 hover:bg-surfaceLight border-surfaceLight text-slate-200'
+                    }`}
+                >
+                    <ShieldAlert className="w-4 h-4" /> 
+                    {isExamMode ? 'Exam Mode ACTIVE' : 'Enable Exam Mode'}
+                </button>
+
+                <div className="w-px h-8 bg-surfaceLight mx-2 hidden md:block" />
+
                 <button 
                     onClick={() => setConfirmAction({ action: 'lock', label: 'Lock All Devices' })}
                     className="flex items-center gap-2 px-4 py-2 bg-surfaceLight/30 hover:bg-surfaceLight border border-surfaceLight rounded-lg text-slate-200 transition-all active:scale-95"

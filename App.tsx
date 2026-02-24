@@ -11,6 +11,7 @@ function App() {
   const [devices, setDevices] = useState<Record<string, DeviceListEntry>>({});
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isExamMode, setIsExamMode] = useState(false);
 
   useEffect(() => {
     const devicesRef = ref(database, 'devices_list');
@@ -94,7 +95,11 @@ function App() {
           </header>
 
           {sortedDevices.length > 0 && (
-             <GlobalControlPanel devices={devices} />
+             <GlobalControlPanel 
+                devices={devices} 
+                isExamMode={isExamMode}
+                onToggleExamMode={setIsExamMode}
+             />
           )}
 
           {sortedDevices.length === 0 ? (
@@ -109,6 +114,7 @@ function App() {
                      deviceId={id} 
                      entry={entry} 
                      onClick={() => setSelectedDeviceId(id)} 
+                     isExamMode={isExamMode}
                    />
                 ))}
              </div>

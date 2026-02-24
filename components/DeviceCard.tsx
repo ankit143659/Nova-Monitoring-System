@@ -1,18 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { database } from '../services/firebase';
 import { ref, onValue } from 'firebase/database';
 import { DeviceListEntry, ActiveSession } from '../types';
-import { Monitor, Circle, Shield, Clock } from 'lucide-react';
+import { Monitor, Circle, Shield, Clock, AlertOctagon } from 'lucide-react';
 
 interface DeviceCardProps {
   deviceId: string;
   entry: DeviceListEntry;
   onClick: () => void;
+  isExamMode: boolean;
 }
 
-export const DeviceCard: React.FC<DeviceCardProps> = ({ deviceId, entry, onClick }) => {
+export const DeviceCard: React.FC<DeviceCardProps> = ({ deviceId, entry, onClick, isExamMode }) => {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [violationCount, setViolationCount] = useState(0);
+  const wasRestrictedRef = useRef(false);
 
   useEffect(() => {
     // Listen for real-time active session updates for this card
@@ -33,26 +36,65 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ deviceId, entry, onClick
   // Logic: Device is online ONLY if DB says online AND last_seen is less than 60 seconds ago
   const isOnline = entry.status === 'online' && (now - new Date(entry.last_seen).getTime() < 60000);
 
+  // Check for restricted browser activity if Exam Mode is active
+  const isRestricted = isExamMode && isOnline && activeSession && (
+    ['chrome', 'firefox', 'msedge', 'safari', 'brave', 'opera'].some(browser => 
+      activeSession.process.toLowerCase().includes(browser)
+    )
+  );
+
+  // Handle violation counting
+  useEffect(() => {
+    if (isRestricted && !wasRestrictedRef.current) {
+      setViolationCount(prev => prev + 1);
+    }
+    wasRestrictedRef.current = isRestricted || false;
+  }, [isRestricted]);
+
+  // Reset count when exam mode is disabled
+  useEffect(() => {
+    if (!isExamMode) {
+      setViolationCount(0);
+      wasRestrictedRef.current = false;
+    }
+  }, [isExamMode]);
+
   return (
     <button
       onClick={onClick}
       className={`relative group flex flex-col items-start text-left p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
-        isOnline 
-          ? 'bg-surface border-surfaceLight hover:border-primary/50 shadow-lg hover:shadow-primary/10' 
-          : 'bg-surface/50 border-surfaceLight/50 opacity-70 grayscale hover:grayscale-0'
+        isRestricted
+          ? 'bg-red-900/20 border-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+          : isOnline 
+            ? 'bg-surface border-surfaceLight hover:border-primary/50 shadow-lg hover:shadow-primary/10' 
+            : 'bg-surface/50 border-surfaceLight/50 opacity-70 grayscale hover:grayscale-0'
       }`}
     >
       <div className="flex justify-between items-start w-full mb-4">
-        <div className={`p-3 rounded-xl ${isOnline ? 'bg-primary/10 text-primary' : 'bg-slate-700/30 text-slate-500'}`}>
+        <div className={`p-3 rounded-xl ${
+            isRestricted ? 'bg-red-500 text-white' :
+            isOnline ? 'bg-primary/10 text-primary' : 'bg-slate-700/30 text-slate-500'
+        }`}>
           <Monitor className="w-8 h-8" />
         </div>
-        <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full border ${
-          isOnline 
-            ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-            : 'bg-slate-500/10 border-slate-500/20 text-slate-400'
-        }`}>
-          <Circle className="w-2 h-2 fill-current" />
-          <span className="uppercase">{isOnline ? 'Online' : 'Offline'}</span>
+        <div className="flex flex-col items-end gap-2">
+            <div className={`flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full border ${
+            isRestricted 
+                ? 'bg-red-500 text-white border-red-600'
+                : isOnline 
+                ? 'bg-green-500/10 border-green-500/20 text-green-400' 
+                : 'bg-slate-500/10 border-slate-500/20 text-slate-400'
+            }`}>
+            <Circle className={`w-2 h-2 fill-current ${isRestricted ? 'animate-ping' : ''}`} />
+            <span className="uppercase">{isRestricted ? 'VIOLATION' : isOnline ? 'Online' : 'Offline'}</span>
+            </div>
+            
+            {isExamMode && violationCount > 0 && (
+                <div className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/30">
+                    <AlertOctagon className="w-3 h-3" />
+                    <span>{violationCount} Violations</span>
+                </div>
+            )}
         </div>
       </div>
 
