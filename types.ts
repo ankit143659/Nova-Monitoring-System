@@ -15,6 +15,8 @@ export interface DeviceListEntry {
   hostname: string;
   status: 'online' | 'offline';
   last_seen: string;
+  labId: string;
+  deviceId: string;
 }
 
 export interface ActiveSession {

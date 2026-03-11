@@ -41,43 +41,45 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({ activities }) 
   const recentActivities = sortedActivities.slice(0, 20); // Show last 20
 
   return (
-    <div className="bg-surface rounded-2xl border border-surfaceLight overflow-hidden flex flex-col h-full">
-      <div className="p-4 border-b border-surfaceLight flex items-center justify-between bg-surface/50 backdrop-blur-sm sticky top-0">
-        <h3 className="font-bold flex items-center gap-2 text-slate-200">
+    <div className="glass-panel rounded-3xl border border-white/5 overflow-hidden flex flex-col h-full relative">
+      <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-md sticky top-0 z-10">
+        <h3 className="font-bold flex items-center gap-2 text-white font-display tracking-tight">
           <Clock className="w-5 h-5 text-accent" />
           Recent Activity
         </h3>
-        <span className="text-xs text-slate-500 bg-surfaceLight/30 px-2 py-1 rounded">
-          Last 20 entries
+        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-black/20 px-2 py-1 rounded border border-white/5">
+          Live Feed
         </span>
       </div>
 
-      <div className="overflow-y-auto flex-1 p-0">
+      <div className="overflow-y-auto flex-1 p-0 custom-scrollbar">
         <table className="w-full text-left border-collapse">
-            <thead className="bg-surfaceLight/20 text-xs uppercase text-slate-500 sticky top-0">
+            <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-slate-500 sticky top-0 backdrop-blur-sm z-10">
                 <tr>
-                    <th className="p-3 font-medium">Time</th>
-                    <th className="p-3 font-medium">Application</th>
-                    <th className="p-3 font-medium">Window Title</th>
+                    <th className="p-4 font-bold border-b border-white/5">Time</th>
+                    <th className="p-4 font-bold border-b border-white/5">Application</th>
+                    <th className="p-4 font-bold border-b border-white/5">Window Title</th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-surfaceLight/50">
+            <tbody className="divide-y divide-white/5">
                 {recentActivities.map((activity, idx) => (
-                    <tr key={idx} className="hover:bg-surfaceLight/20 transition-colors">
-                        <td className="p-3 whitespace-nowrap">
+                    <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                        <td className="p-4 whitespace-nowrap">
                             <div className="flex flex-col">
-                                <span className="text-xs text-slate-400 font-mono">{activity.time}</span>
+                                <span className="text-xs text-slate-300 font-mono group-hover:text-primary transition-colors">{activity.time}</span>
                                 <span className="text-[10px] text-slate-600">{activity.date}</span>
                             </div>
                         </td>
-                        <td className="p-3">
-                            <div className="flex items-center gap-2 text-sm text-slate-300">
-                                <AppWindow className="w-3 h-3 text-primary/70" />
+                        <td className="p-4">
+                            <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
+                                <div className="p-1.5 rounded bg-white/5 text-slate-400 group-hover:text-white group-hover:bg-primary/20 transition-colors">
+                                   <AppWindow className="w-3 h-3" />
+                                </div>
                                 {activity.processName || 'Unknown'}
                             </div>
                         </td>
-                        <td className="p-3">
-                            <div className="text-xs text-slate-400 truncate max-w-[200px] md:max-w-[300px]" title={activity.windowTitle}>
+                        <td className="p-4">
+                            <div className="text-xs text-slate-500 truncate max-w-[150px] md:max-w-[250px] font-mono opacity-80 group-hover:opacity-100 transition-opacity" title={activity.windowTitle}>
                                 {activity.windowTitle}
                             </div>
                         </td>

@@ -57,11 +57,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onSendCommand, isO
     variant?: 'default' | 'danger' | 'warning',
     onClick?: () => void 
   }) => {
-    const baseClasses = "flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border gap-2 shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseClasses = "flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 border gap-2 shadow-sm hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden";
     const variants = {
-      default: "bg-surfaceLight/30 border-surfaceLight hover:bg-primary/20 hover:border-primary/50 text-slate-200",
-      danger: "bg-surfaceLight/30 border-surfaceLight hover:bg-red-500/20 hover:border-red-500/50 text-red-400",
-      warning: "bg-surfaceLight/30 border-surfaceLight hover:bg-amber-500/20 hover:border-amber-500/50 text-amber-400"
+      default: "bg-surfaceLight/10 border-white/5 hover:bg-primary/10 hover:border-primary/30 text-slate-300 hover:text-primary",
+      danger: "bg-red-500/5 border-red-500/10 hover:bg-red-500/10 hover:border-red-500/30 text-red-400 hover:text-red-300",
+      warning: "bg-amber-500/5 border-amber-500/10 hover:bg-amber-500/10 hover:border-amber-500/30 text-amber-400 hover:text-amber-300"
     };
 
     return (
@@ -70,8 +70,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onSendCommand, isO
         onClick={onClick ? onClick : () => action && onSendCommand(action, {})}
         disabled={!isOnline}
       >
-        <Icon className="w-6 h-6 mb-1" />
-        <span className="text-xs font-medium">{label}</span>
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Icon className="w-6 h-6 mb-1 relative z-10" />
+        <span className="text-xs font-medium font-display tracking-wide relative z-10">{label}</span>
       </button>
     );
   };
@@ -80,28 +81,28 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onSendCommand, isO
     <button
       onClick={() => handleSendKey(keyName)}
       disabled={!isOnline}
-      className="flex items-center justify-center px-4 py-3 bg-surfaceLight/40 border border-surfaceLight rounded-lg hover:bg-accent/20 hover:border-accent hover:text-white transition-all active:scale-95 text-xs font-mono font-bold text-slate-300 disabled:opacity-50"
+      className="flex items-center justify-center px-4 py-3 bg-surfaceLight/20 border border-white/5 rounded-lg hover:bg-accent/20 hover:border-accent/30 hover:text-accent transition-all active:scale-95 text-xs font-mono font-bold text-slate-400 disabled:opacity-50 shadow-sm hover:shadow-accent/10"
     >
       {label}
     </button>
   );
 
   return (
-    <div className="bg-surface rounded-2xl border border-surfaceLight overflow-hidden h-full flex flex-col">
-      <div className="p-4 border-b border-surfaceLight flex items-center justify-between">
-        <h3 className="font-bold flex items-center gap-2 text-slate-200">
+    <div className="glass-panel rounded-3xl border border-white/5 overflow-hidden h-full flex flex-col relative">
+      <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-md">
+        <h3 className="font-bold flex items-center gap-2 text-white font-display tracking-tight">
           <Terminal className="w-5 h-5 text-accent" />
           Command Center
         </h3>
-        <div className="flex bg-surfaceLight/50 p-1 rounded-lg overflow-x-auto">
+        <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
           {(['power', 'tools', 'input', 'keys'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
                 activeTab === tab 
-                  ? 'bg-primary text-white shadow-sm' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
