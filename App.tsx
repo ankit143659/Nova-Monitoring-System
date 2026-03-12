@@ -7,7 +7,7 @@ import { DeviceCard } from './components/DeviceCard';
 import { GlobalControlPanel } from './components/GlobalControlPanel';
 import { ViolationList } from './components/ViolationList';
 import { ViolationHistory } from './components/ViolationHistory';
-import { LayoutDashboard, Server, MoreVertical, History, ArrowLeft, Monitor } from 'lucide-react';
+import { LayoutDashboard, Server, MoreVertical, History, ArrowLeft, Monitor, Search } from 'lucide-react';
 
 // Restricted apps list for Exam Mode
 const RESTRICTED_APPS = ['chrome', 'firefox', 'msedge', 'safari', 'brave', 'opera', 'discord', 'whatsapp', 'telegram'];
@@ -16,6 +16,7 @@ function App() {
   // Store full device data flattened from Labs
   const [devices, setDevices] = useState<Record<string, any>>({});
   const [selectedLabId, setSelectedLabId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDevice, setSelectedDevice] = useState<{labId: string, deviceId: string} | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExamMode, setIsExamMode] = useState(false);
@@ -197,16 +198,29 @@ function App() {
 
   // Sort devices
   const sortedDevices = deviceEntries.sort(([, a], [, b]) => {
-     // Online first, then last seen
+     // Online first, then offline
      if (a.status === 'online' && b.status !== 'online') return -1;
      if (a.status !== 'online' && b.status === 'online') return 1;
-     return new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime();
+     
+     // Alphabetical sort for stable UI
+     const nameA = (a.hostname || a.device_name || '').toLowerCase();
+     const nameB = (b.hostname || b.device_name || '').toLowerCase();
+     return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   // Filter devices if lab is selected
-  const displayedDevices = selectedLabId 
+  let displayedDevices = selectedLabId 
     ? sortedDevices.filter(([, d]) => d.labId === selectedLabId)
     : sortedDevices;
+
+  const totalDevicesInLab = displayedDevices.length;
+
+  if (searchQuery && selectedLabId) {
+      displayedDevices = displayedDevices.filter(([, d]) => 
+          (d.hostname || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+          (d.device_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }
 
   // Calculate counts
   const totalDevices = displayedDevices.length;
@@ -238,7 +252,7 @@ function App() {
               <div className="flex items-center gap-4">
                 {selectedLabId && (
                   <button 
-                    onClick={() => setSelectedLabId(null)}
+                    onClick={() => { setSelectedLabId(null); setSearchQuery(''); }}
                     className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"
                   >
                     <ArrowLeft className="w-6 h-6" />
@@ -313,14 +327,14 @@ function App() {
                     <p className="text-slate-500 font-light text-lg">No labs found in the network.</p>
                  </div>
              ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-20">
                     {labIds.map(labId => {
                        const labDevices = sortedDevices.filter(([, d]) => d.labId === labId);
                        const total = labDevices.length;
                        const online = labDevices.filter(([, d]) => d.status === 'online').length;
                        
                        return (
-                         <button key={labId} onClick={() => setSelectedLabId(labId)} className="glass glass-hover p-6 rounded-3xl border border-white/5 text-left flex flex-col gap-4 transition-all hover:-translate-y-1">
+                         <button key={labId} onClick={() => { setSelectedLabId(labId); setSearchQuery(''); }} className="glass glass-hover p-6 rounded-3xl border border-white/5 text-left flex flex-col gap-4 transition-all hover:-translate-y-1">
                             <div className="flex items-center gap-4">
                                <div className="p-4 bg-primary/10 rounded-2xl text-primary border border-primary/20">
                                   <Server className="w-8 h-8" />
@@ -347,29 +361,54 @@ function App() {
              )
           ) : (
              // Show Devices for selected lab
-             displayedDevices.length === 0 ? (
-                 <div className="text-center py-32 glass rounded-3xl border-dashed border-2 border-white/10 flex flex-col items-center justify-center gap-4">
-                    <div className="p-4 rounded-full bg-surfaceLight/30">
-                       <Monitor className="w-8 h-8 text-slate-500" />
+             <div className="flex flex-col gap-6 pb-20">
+                 {/* Search Bar */}
+                 {totalDevicesInLab > 0 && (
+                    <div className="flex justify-end">
+                       <div className="flex items-center bg-surfaceLight/30 border border-white/10 rounded-xl px-4 py-2 w-full md:w-80 focus-within:border-primary/50 transition-colors">
+                          <Search className="w-5 h-5 text-slate-400 mr-3" />
+                          <input 
+                            type="text" 
+                            placeholder="Search devices..." 
+                            className="bg-transparent border-none outline-none text-white w-full placeholder:text-slate-500 text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                       </div>
                     </div>
-                    <p className="text-slate-500 font-light text-lg">No devices connected in this lab.</p>
-                 </div>
-             ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-                    {displayedDevices.map(([id, entry]) => (
-                       <DeviceCard 
-                         key={id} 
-                         labId={entry.labId}
-                         deviceId={entry.deviceId} 
-                         entry={entry} 
-                         activeSession={devices[id]?.active}
-                         onClick={() => setSelectedDevice({ labId: entry.labId, deviceId: entry.deviceId })} 
-                         isExamMode={isExamMode}
-                         violationCount={violations[id]?.count || 0}
-                       />
-                    ))}
-                 </div>
-             )
+                 )}
+
+                 {totalDevicesInLab === 0 ? (
+                     <div className="text-center py-32 glass rounded-3xl border-dashed border-2 border-white/10 flex flex-col items-center justify-center gap-4">
+                        <div className="p-4 rounded-full bg-surfaceLight/30">
+                           <Monitor className="w-8 h-8 text-slate-500" />
+                        </div>
+                        <p className="text-slate-500 font-light text-lg">No devices connected in this lab.</p>
+                     </div>
+                 ) : displayedDevices.length === 0 ? (
+                     <div className="text-center py-32 glass rounded-3xl border-dashed border-2 border-white/10 flex flex-col items-center justify-center gap-4">
+                        <div className="p-4 rounded-full bg-surfaceLight/30">
+                           <Search className="w-8 h-8 text-slate-500" />
+                        </div>
+                        <p className="text-slate-500 font-light text-lg">No devices match your search.</p>
+                     </div>
+                 ) : (
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                        {displayedDevices.map(([id, entry]) => (
+                           <DeviceCard 
+                             key={id} 
+                             labId={entry.labId}
+                             deviceId={entry.deviceId} 
+                             entry={entry} 
+                             activeSession={devices[id]?.active}
+                             onClick={() => setSelectedDevice({ labId: entry.labId, deviceId: entry.deviceId })} 
+                             isExamMode={isExamMode}
+                             violationCount={violations[id]?.count || 0}
+                           />
+                        ))}
+                     </div>
+                 )}
+             </div>
           )}
        </div>
     </div>
